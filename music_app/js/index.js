@@ -15,6 +15,13 @@ $(function(){
     //标记当前播放器播放状态：true-正在播放 false-暂停播放
     let playing = false
 
+    //初始化播放歌曲下标数组
+    let musicsarray = []
+    //初始化播放列表下标
+    let musicplayingIndex = 0
+
+    let eventType = ''
+
     //选中指定类名的元素并绑定点击事件
     $('.btn-list').on('click',function(){
         //显示歌曲列表
@@ -32,7 +39,9 @@ $(function(){
          //循环遍历数组
          $.each(musics,(i,e)=>{
             $('#music-list').append(`<li data-index="${i}">${e.name}</li>`)
+            musicsarray.push(i)
          }) 
+        shuffleArray(musicsarray)
     })
 
     //为歌曲列表项绑定点击事件，实现歌曲播放
@@ -43,6 +52,7 @@ $(function(){
         //获取li元素上的data-index属性
         currentIndex = $(this).data('index')
         //获取需要播放的歌曲对象
+        musicplayingIndex = currentIndex
         let m = musics[currentIndex] 
         //为播放器设置播放源
         player.prop('src',m.path)
@@ -88,6 +98,13 @@ $(function(){
         $('.time-now').text(fmtTime(now))
         //实时同步进度显示
         $('.progress').css('width',`${now/total*100}%`) 
+
+        if(now === total){
+            if (eventType === 'fa-retweet') 
+                musicplay(musicplayingIndex)
+            else
+                nextmusic()
+        }
     }) 
 
     //mm:ss
@@ -133,6 +150,119 @@ $(function(){
         }
     })
 
+
+  $('.btn-loop').on('click',function(){
+    if($('.btn-loop i')[0].classList[1] == "fa-random"){
+        $('.btn-loop i')[0].classList.replace("fa-random","fa-retweet")
+        eventType = 'fa-random'
+    }
+    else if($('.btn-loop i')[0].classList[1] == "fa-retweet"){
+        eventType = 'fa-retweet'
+        $('.btn-loop i')[0].classList.replace("fa-retweet","fa-rotate-right")
+    }
+    else{
+        $('.btn-loop i')[0].classList.replace("fa-rotate-right","fa-random")
+        musicsarray = shuffleArray(musicsarray)
+        console.log(musicsarray);
+        musicplayingIndex = 0
+        eventType = 'fa-rotate-right'
+    }
+    
+  })  
+
+  $('.btn-next').on('click',function(){
+    nextmusic()
+  })
+
+  function shuffleArray(musicsarray) {
+    for (var i = musicsarray.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = musicsarray[i];
+        musicsarray[i] = musicsarray[j];
+        musicsarray[j] = temp;
+    }
+    console.log(musicsarray)
+    return musicsarray;
+    }
+
+    $('.btn-prev').on('click',function(){
+        prevmusic()
+    })
+
+
+    function musicplay(index){
+        console.log(index)
+        $(`#music-list li:eq(${currentIndex})`).removeClass('active');
+        currentIndex = index
+        //获取需要播放的歌曲对象
+        let m = musics[currentIndex] 
+        //为播放器设置播放源
+        player.prop('src',m.path)
+        //开始播放
+        startPlay(m)
+    }
+
+
+    function prevmusic(){
+        if($('.btn-loop i')[0].classList[1] == "fa-random"){
+            if(0 <= musicplayingIndex)
+                musicplay(musicsarray[--musicplayingIndex])
+            else
+                shuffleArray(musicsarray)
+                musicplayingIndex = musicsarray.length - 1
+        }
+        else if($('.btn-loop i')[0].classList[1] == "fa-retweet"){
+            if(0 <= musicplayingIndex){
+                --musicplayingIndex
+                musicplay(musicplayingIndex)
+            }
+            else{
+                musicplayingIndex = musicsarray.length - 1
+            }
+                
+        }
+        else{
+            if(0 <= musicplayingIndex){
+                --musicplayingIndex
+                musicplay(musicplayingIndex)
+            }
+            else{
+                musicplayingIndex = musicsarray.length - 1
+            }
+        }
+    }
+
+
+    function nextmusic(){
+        if($('.btn-loop i')[0].classList[1] == "fa-random"){
+            if(musicplayingIndex < musicsarray.length)
+                musicplay(musicsarray[++musicplayingIndex])
+            else{
+                shuffleArray(musicsarray)
+                musicplayingIndex = 0
+            }
+                
+        }
+        else if($('.btn-loop i')[0].classList[1] == "fa-retweet"){
+            if(musicplayingIndex < musicsarray.length){
+                ++musicplayingIndex
+                musicplay(musicplayingIndex)
+            }
+            else{
+                musicplayingIndex = 0
+            }
+                
+        }
+        else{
+            if(musicplayingIndex < musicsarray.length){
+                ++musicplayingIndex
+                musicplay(musicplayingIndex)
+            }
+            else{
+                musicplayingIndex = 0
+            }
+        }
+    }
     // 任务
     // 1. 点击按钮实现循环图标切换（0-列表，1-随机，2-单曲）
     // 2. 根据循环状态实现上一曲和下一曲切歌
